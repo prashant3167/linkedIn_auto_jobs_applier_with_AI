@@ -276,6 +276,18 @@ class LinkedInEasyApplier:
             question_text = section.find_element(By.TAG_NAME, 'label').text.lower()
             is_numeric = self._is_numeric_field(text_field)
             is_phone_number = self._is_phone_field(text_field)
+            existing_answer = None
+            question_type = "numeric" if is_numeric==True else "textbox"
+            # Check in cache if question is already answered
+            for item in self.all_data:
+                if item['question'] == self._sanitize_text(question_text) and item['type'] == question_type:
+                    existing_answer = item
+                    break
+            if existing_answer:
+                self._enter_text(# The above code is creating a variable named `text_field` in Python.
+                text_field, existing_answer['answer'])
+                return True
+            #  If question is not find in cache ask from LLM
             if is_phone_number:
                 question_type = 'textbox'
                 answer = self.gpt_answerer.get_phone_number(question_text)
@@ -285,15 +297,8 @@ class LinkedInEasyApplier:
             else:
                 question_type = 'textbox'
                 answer = self.gpt_answerer.answer_question_textual_wide_range(question_text)
-            existing_answer = None
-            for item in self.all_data:
-                if item['question'] == self._sanitize_text(question_text) and item['type'] == question_type:
-                    existing_answer = item
-                    break
-            if existing_answer:
-                self._enter_text(text_field, existing_answer['answer'])
-                return True
-            print(question_text, answer)
+            
+            # print(question_text, answer)
             self._save_questions_to_json({'type': question_type, 'question': question_text, 'answer': answer})
             self._enter_text(text_field, answer)
             return True
